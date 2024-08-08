@@ -4,9 +4,8 @@ import (
 	"image/color"
 	"log"
 
-	"git.smallzcomputing.com/sandgame/util"
-
-	"github.com/hajimehoshi/ebiten"
+	"git.smallzcomputing.com/sandgame/game"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type Grid struct {
@@ -41,13 +40,8 @@ func PrepareGrid(width, height, MOUSEX, MOUSEY int) [][]Particle {
 }
 
 func (particle *Particle) PrepareParticle(MOUSEX, MOUSEY int) *Particle {
-	particleImg, err := ebiten.NewImage(1, 1, ebiten.FilterDefault)
 
-	if err != nil {
-		util.LogErr(err)
-	}
-
-	result := Particle{Active: false, Position: Vector2{MOUSEX, MOUSEY}, Pixel: particleImg}
+	result := Particle{Active: false, Position: Vector2{MOUSEX, MOUSEY}, Pixel: ebiten.NewImage(1, 1)}
 	return &result
 }
 
@@ -89,20 +83,20 @@ func CheckForParticleSpawn(GRID Grid, MOUSEX int, MOUSEY int) {
 
 		if !particle.Active {
 			// ACTIVATE particle pixel
-			PARTICLE_COUNT++
+			//game.PARTICLE_COUNT++
 			GRID.Map[MOUSEX][MOUSEY].Active = true
-			log.Printf("Spawning pixel @ [%v, %v] -- #%v", MOUSEX, MOUSEY, PARTICLE_COUNT)
+			//log.Printf("Spawning pixel @ [%v, %v] -- #%v", MOUSEX, MOUSEY, game.PARTICLE_COUNT)
 		}
 	}
 }
 
 func SimulateCollision(particle Particle) *Particle {
 
-	belowParticle := GRID.Map[particle.Position.X][particle.Position.Y-1]
-	aboveParticle := GRID.Map[particle.Position.X][particle.Position.Y+1]
-	belowLeftParticle := GRID.Map[particle.Position.X-1][particle.Position.Y-1]
-	belowRightParticle := GRID.Map[particle.Position.X+1][particle.Position.Y-1]
-	groundParticle := GRID.Map[particle.Position.X][particle.Position.Y-GRAVITY]
+	belowParticle := game.GRID.Map[particle.Position.X][particle.Position.Y-1]
+	aboveParticle := game.GRID.Map[particle.Position.X][particle.Position.Y+1]
+	belowLeftParticle := game.GRID.Map[particle.Position.X-1][particle.Position.Y-1]
+	belowRightParticle := game.GRID.Map[particle.Position.X+1][particle.Position.Y-1]
+	groundParticle := game.GRID.Map[particle.Position.X][particle.Position.Y-game.GRAVITY]
 	if !particle.Active {
 
 		// Particle is inactive
