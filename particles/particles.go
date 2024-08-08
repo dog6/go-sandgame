@@ -4,7 +4,7 @@ import (
 	"image/color"
 	"log"
 
-	"git.smallzcomputing.com/sandgame/game"
+	"git.smallzcomputing.com/sand-game/game"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 

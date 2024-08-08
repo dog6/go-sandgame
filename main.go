@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"git.smallzcomputing.com/sandgame/game"
+	"git.smallzcomputing.com/sand-game/game"
 )
 
 func main() {

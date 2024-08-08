@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"git.smallzcomputing.com/sandgame/particles"
+	"git.smallzcomputing.com/sand-game/particles"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )

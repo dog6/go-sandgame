@@ -1,4 +1,4 @@
-module git.smallzcomputing.com/sandgame
+module git.smallzcomputing.com/sand-game
 
 go 1.22.1
 
