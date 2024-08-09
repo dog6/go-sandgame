@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"log"
+	"sync"
 
 	particles "git.smallzcomputing.com/sand-game/particles"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -36,14 +37,24 @@ type Particle struct {
 
 const (
 	SCREENWIDTH, SCREENHEIGHT = 1280, 720
-	GRAVITY                   = 10
+	GRAVITY                   = 1
 )
 
 func (g *Game) Update() error {
-	MOUSEX, MOUSEY = ebiten.CursorPosition()    // Capture mouse position
-	CheckForParticleSpawn(GRID, MOUSEX, MOUSEY) // Check for particle spawn
-	//CheckForSortColumns()
-	SimulateParticles()
+
+	MOUSEX, MOUSEY = ebiten.CursorPosition() // Capture mouse position
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	CheckForParticleSpawn(GRID, MOUSEX, MOUSEY, wg) // Check for particle spawn
+	//wg.Done()
+
+	wg.Add(1)
+	SimulateParticles(wg)
+	//wg.Done()
+
+	//wg.Wait()
+
 	return nil
 }
 
@@ -96,8 +107,11 @@ func SwapColumns(col1, col2 int) {
 func (g *Game) Draw(screen *ebiten.Image) {
 	ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %v\nFPS: %v\nPC: %v", ebiten.ActualTPS(), ebiten.ActualFPS(), PARTICLE_COUNT))
 
-	DrawGrid(screen, GRID)
+	wg := sync.WaitGroup{}
 
+	wg.Add(1)
+	go DrawGrid(screen, GRID, &wg)
+	wg.Wait()
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
@@ -141,34 +155,50 @@ func PrepareGrid(width, height, MOUSEX, MOUSEY int) [][]Particle {
 	return result
 }
 
-func SimulateParticles() {
+func SimulateParticles(wg sync.WaitGroup) {
+	defer wg.Done()
 	// For each particle
 	for x := 0; x < GRID.Width; x++ {
-		for y := 0; y < GRID.Height/2; y++ {
+		for y := 0; y < GRID.Height/2-1; y++ {
 
 			p := GRID.Map[x][y]
 
 			// if particle below is inactive
-			if p.Active && y+1 < SCREENHEIGHT && !GRID.Map[x][y+1].Active {
+			/*if p.Active && y+1 < SCREENHEIGHT && !GRID.Map[x][y+1].Active {
 				GRID.Map[x][y+1].Active = true
 				GRID.Map[x][y].Active = false
 				fmt.Printf("Moved particleY from %v to  %v\n", y, y-1)
-			}
+			}*/
 
-			/*if !GRID.Map[x][y+1].Active && !GRID.Map[x-1][y+1].Active && !GRID.Map[x+1][y+1].Active {
-				SimulateCollision(GRID.Map[x][y])
-			}*/
-			// Sand effect
-			/*if !GRID.Map[x-1][y-1].Active && GRID.Map[x][y-1].Active {
-				p.Active = false
-				GRID.Map[x-1][y-1].Active = true
-			}*/
+			if p.Active {
+
+				// Check if can fall
+				if !GRID.Map[x][y+1].Active {
+					GRID.Map[x][y].Active = false
+					GRID.Map[x][y+1].Active = true
+				} else {
+
+					// Sand effect
+					if !GRID.Map[x-1][y+1].Active {
+						GRID.Map[x][y].Active = false
+						GRID.Map[x-1][y+1].Active = true
+					} else if !GRID.Map[x+1][y+1].Active {
+						GRID.Map[x][y].Active = false
+						GRID.Map[x+1][y+1].Active = true
+					} else {
+						continue
+					}
+
+				}
+
+			}
 
 		}
 	}
 }
 
-func DrawGrid(renderer *ebiten.Image, GRID Grid) {
+func DrawGrid(renderer *ebiten.Image, GRID Grid, wg *sync.WaitGroup) {
+	defer wg.Done()
 	// Loop through all grid positions
 	for x := 0; x < GRID.Width; x++ {
 		for y := 0; y < GRID.Height; y++ {
@@ -180,29 +210,14 @@ func DrawGrid(renderer *ebiten.Image, GRID Grid) {
 				op.GeoM.Translate(float64(x), float64(y))
 				GRID.Map[x][y].Pixel.Fill(color.RGBA{255, 255, 255, 255})
 				renderer.DrawImage(GRID.Map[x][y].Pixel, op)
-
-				//SimulateParticles()
 			}
 
 		}
 	}
 }
 
-/*
-func SimulateGravity(particle Particle) *Particle {
-
-		pos := particle.Position
-		floorY := (SCREENHEIGHT / 2) - 1
-
-		if pos.Y < floorY {
-			//fmt.Printf("Moving pixel @ %v to %v", particle.Position.Y, particle.Position.Y-1)
-			pos.Y -= 1
-			return &particle
-		}
-		return nil
-	}
-*/
-func CheckForParticleSpawn(GRID Grid, MOUSEX int, MOUSEY int) {
+func CheckForParticleSpawn(GRID Grid, MOUSEX int, MOUSEY int, wg sync.WaitGroup) {
+	defer wg.Done()
 	// If mouse0 pressed
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButton(0)) && MOUSEX >= 0 && MOUSEY >= 0 {
 		// If particle pixel is INACTIVE
