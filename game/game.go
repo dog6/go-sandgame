@@ -101,7 +101,9 @@ func PrepareGrid(width, height, MOUSEX, MOUSEY int) [][]Particle {
 
 func IsParticleStable(x, y int) bool {
 	if y == GRID.Height/2-2 {
-		GetParticle(x, y).Color = color.RGBA{50, 160, 255, 255}
+		if ShowSkippedParticles {
+			GetParticle(x, y).Color = color.RGBA{50, 160, 255, 255}
+		}
 		return true
 	}
 
