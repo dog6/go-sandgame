@@ -1,6 +1,7 @@
 package game
 
 import (
+	"C"
 	"fmt"
 	"image/color"
 	"log"
@@ -10,6 +11,11 @@ import (
 	particles "git.smallzcomputing.com/sand-game/particles"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	_ "github.com/silbinarywolf/preferdiscretegpu"
+)
+import (
+	"git.smallzcomputing.com/sand-game/config"
+	"git.smallzcomputing.com/sand-game/util"
 )
 
 type Grid struct {
@@ -18,9 +24,13 @@ type Grid struct {
 }
 
 var (
-	GRID           Grid
-	MOUSEX, MOUSEY int
-	PARTICLE_COUNT int
+	GRID                      Grid
+	MOUSEX, MOUSEY            int
+	PARTICLE_COUNT            int
+	Config                    config.Configuration
+	SCREENWIDTH, SCREENHEIGHT        = 1600, 900
+	MAX_PARTICLES             int    = SCREENWIDTH * SCREENHEIGHT // max particles allowed on screen at once (in a perfect world this is SCREENWIDTH*SCREENHEIGHT)
+	VERSION                   string                              // version of game
 )
 var ShowSkippedParticles = false // colors any particles that aren't being simulated red
 
@@ -34,11 +44,7 @@ type Particle struct {
 }
 
 // CONST GAME VARIABLES
-const (
-	SCREENWIDTH, SCREENHEIGHT     = 540, 480
-	GRAVITY                       = 1
-	MAX_PARTICLES             int = 20000 // max particles allowed on screen at once (in a perfect world this is SCREENWIDTH*SCREENHEIGHT)
-)
+const GRAVITY = 1
 
 func (g *Game) Update() error {
 
@@ -46,7 +52,10 @@ func (g *Game) Update() error {
 
 	CheckForParticleSpawn(GRID, MOUSEX, MOUSEY /*&wg*/) // Check for particle spawn
 
-	SpawnRain(5) // laggy atm
+	if Config.RainAmount != 0 {
+		go SpawnRain(Config.RainAmount)
+	}
+
 	SimulateParticles()
 	return nil
 }
@@ -65,11 +74,23 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 	return SCREENWIDTH / 2, SCREENHEIGHT / 2
 }
 
-func Start() {
+func Start(Config *config.Configuration) {
 
+	// Log config
+	VERSION = Config.VersionNumber
+	Config.LogConfig()
 	ebiten.SetWindowSize(SCREENWIDTH, SCREENHEIGHT)
-	ebiten.SetWindowTitle("Sand-game")
-	ebiten.SetTPS(60) // double max TPS
+	ebiten.SetWindowTitle(fmt.Sprintf("Sandgame %v", VERSION))
+	ebiten.SetTPS(Config.MaxTPS) // double max TPS
+	MAX_PARTICLES = Config.MaxParticles
+	SCREENWIDTH, SCREENHEIGHT = Config.ScreenWidth, Config.ScreenHeight
+	ShowSkippedParticles = Config.ShowSkippedParticles
+	// Log about rain
+	/*if Config.RainAmount != 0 {
+		util.Log(fmt.Sprintf("Raining ENABLED -> %v drops/frame", Config.RainAmount))
+	} else {
+		util.Log("Rain DISABLED")
+	}*/
 
 	GRID = Grid{Width: SCREENHEIGHT, Height: SCREENHEIGHT}
 	GRID.Map = PrepareGrid(SCREENWIDTH, SCREENHEIGHT, MOUSEX, MOUSEY)
@@ -96,7 +117,7 @@ func PrepareGrid(width, height, MOUSEX, MOUSEY int) [][]Particle {
 		}
 
 	}
-	log.Printf("Grid size = [width: %v, height: %v]\n", len(result), len(result[0]))
+	util.Log(fmt.Sprintf("Grid size = [width: %v, height: %v]\n", len(result), len(result[0])))
 	return result
 }
 
@@ -161,6 +182,8 @@ func SimulateParticles() {
 }
 
 /*
+Cool, but inefficient
+
 	func IndexToPos(idx int) (int, int) {
 		x := idx % SCREENWIDTH
 		var y int
@@ -171,25 +194,76 @@ func SimulateParticles() {
 		}
 		return x, y
 	}
+
+TODO: Chunking
+func IsSurrounded(particle *Particle) bool {
+	pos := particle.Position
+	p1 := GetParticle(pos.X-1, pos.Y+1).Active
+	p2 := GetParticle(pos.X, pos.Y+1).Active
+	p3 := GetParticle(pos.X+1, pos.Y+1).Active
+	p4 := GetParticle(pos.X-1, pos.Y).Active
+	p6 := GetParticle(pos.X+1, pos.Y).Active
+	p7 := GetParticle(pos.X-1, pos.Y-1).Active
+	p8 := GetParticle(pos.X, pos.Y-1).Active
+	p9 := GetParticle(pos.X+1, pos.Y-1).Active
+
+	if p1 && p2 && p3 && p4 && p6 && p7 && p8 && p9 {
+		return true
+	} else {
+		return false
+	}
+}
+
+func Draw3x3Chunk(renderer *ebiten.Image, GRID Grid, x, y int) {
+	for i := 0; i < 9; i++ {
+		switch i {
+		case 1:
+			DrawParticle(renderer, x-1, y+1)
+			break
+		case 2:
+			DrawParticle(renderer, x, y+1)
+			break
+		case 3:
+			DrawParticle(renderer, x+1, y+1)
+			break
+		case 4:
+			DrawParticle(renderer, x-1, y)
+			break
+		case 5:
+			DrawParticle(renderer, x, y)
+			break
+		case 6:
+			DrawParticle(renderer, x+1, y)
+			break
+		case 7:
+			DrawParticle(renderer, x-1, y-1)
+			break
+		case 8:
+			DrawParticle(renderer, x, y-1)
+			break
+		case 9:
+			DrawParticle(renderer, x+1, y-1)
+			break
+		}
+	}
+}
 */
+
+func DrawParticle(renderer *ebiten.Image, x, y int) {
+	renderer.Set(x, y, GetParticle(x, y).Color)
+}
+
 func DrawGrid(renderer *ebiten.Image, GRID Grid, wg *sync.WaitGroup) {
 	defer wg.Done()
+	// draw from bottom right to top left
 	// Loop through all grid positions
 	for x := GRID.Width; x > 0; x-- {
 		for y := GRID.Height - 1; y > 0; y-- {
-			//for i := 0; i < SCREENHEIGHT*SCREENWIDTH; i++ {
-
-			//	x, y := IndexToPos(i)
 
 			if GetParticle(x, y).Active {
-				// Drawing
-				op := &ebiten.DrawImageOptions{}
-				op.GeoM.Translate(float64(x), float64(y))
-				GetParticle(x, y).Pixel.Fill(GetParticle(x, y).Color)
-				renderer.Set(x, y, GetParticle(x, y).Color)
-				//renderer.DrawImage(GetParticle(x, y).Pixel, op)
-
+				DrawParticle(renderer, x, y)
 			}
+
 		}
 
 	}
@@ -200,7 +274,7 @@ func SpawnRain(spawnRate int) {
 		for drops := 0; drops < spawnRate; drops++ {
 			PARTICLE_COUNT++
 			xPos := rand.Intn(SCREENWIDTH)
-			yPos := rand.Intn(GRID.Height/2-2) + 100
+			yPos := rand.Intn(50) //rand.Intn(GRID.Height/2-2) + 100
 
 			if !GRID.Map[xPos][yPos].Active {
 				GRID.Map[xPos][yPos].Active = true
@@ -223,7 +297,7 @@ func SpawnParticle(x, y int) {
 		// ACTIVATE particle pixel
 		PARTICLE_COUNT++
 		SetParticle(x, y, true)
-		log.Printf("Activating pixel @ [%v, %v] -- #%v", x, y, PARTICLE_COUNT)
+		util.Log(fmt.Sprintf("Activating pixel @ [%v, %v] -- #%v", x, y, PARTICLE_COUNT))
 	}
 }
 
@@ -231,7 +305,7 @@ func DisableParticle(x, y int) {
 	if GetParticle(x, y).Active {
 		SetParticle(x, y, false)
 		PARTICLE_COUNT--
-		log.Printf("Deactivating pixel @ [%v, %v] -- #%v", MOUSEX, MOUSEY, PARTICLE_COUNT)
+		util.Log(fmt.Sprintf("Deactivating pixel @ [%v, %v] -- #%v", MOUSEX, MOUSEY, PARTICLE_COUNT))
 	}
 }
 
