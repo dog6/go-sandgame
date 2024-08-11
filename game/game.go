@@ -31,8 +31,9 @@ var (
 	SCREENWIDTH, SCREENHEIGHT        = 1600, 900
 	MAX_PARTICLES             int    = SCREENWIDTH * SCREENHEIGHT // max particles allowed on screen at once (in a perfect world this is SCREENWIDTH*SCREENHEIGHT)
 	VERSION                   string                              // version of game
+	Conf                      config.Configuration
+	ShowSkippedParticles      = false // renders particles not being simulated as red
 )
-var ShowSkippedParticles = false // colors any particles that aren't being simulated red
 
 type Game struct{}
 
@@ -52,8 +53,8 @@ func (g *Game) Update() error {
 
 	CheckForParticleSpawn(GRID, MOUSEX, MOUSEY /*&wg*/) // Check for particle spawn
 
-	if Config.RainAmount != 0 {
-		go SpawnRain(Config.RainAmount)
+	if Conf.RainAmount > 0 {
+		SpawnRain(Config.RainAmount)
 	}
 
 	SimulateParticles()
@@ -77,6 +78,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 func Start(Config *config.Configuration) {
 
 	// Log config
+	Conf = *Config
 	VERSION = Config.VersionNumber
 	Config.LogConfig()
 	ebiten.SetWindowSize(SCREENWIDTH, SCREENHEIGHT)
@@ -139,18 +141,19 @@ func IsParticleStable(x, y int) bool {
 	}
 
 	// Check if particle above & below
-	if GetParticle(x, y-1).Active && GetParticle(x, y+1).Active /*|| GetParticle(x, y+1).Active && (GetParticle(x+1, y).Active) && (GetParticle(x-1, y).Active)*/ {
+	/*if GetParticle(x, y-1).Active && GetParticle(x, y+1).Active {
 		if ShowSkippedParticles {
 			GetParticle(x, y).Color = color.RGBA{255, 120, 120, 255}
 		}
 		return true
 	}
+	return false*/
 	return false
 }
 
 func SimulateParticles() {
 	// For each particle
-	for x := GRID.Width - 1; x > 1; x-- {
+	for x := GRID.Width; x > 0; x-- {
 		for y := GRID.Height / 2; y > 0; y-- {
 
 			if GetParticle(x, y).Active && y > 0 {

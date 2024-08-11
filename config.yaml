@@ -6,7 +6,7 @@ maxTPS: 60 # how many times update is called, will game game speed at the moment
 
 ## Game settings
 maxParticles: 1440000 # 1600*900, recommended is screenWidth*screenHeight
-rainAmount: 0 # how much rain spawns every frame. 0 turns rain off
+rainAmount: 10 # how much rain spawns every frame. 0 turns rain off
 showSkippedParticles: false
 
 verboseLogging: false
