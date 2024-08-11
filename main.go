@@ -7,8 +7,6 @@ import (
 )
 
 func main() {
-	x := "test"
-	log.Println(x)
 	log.Println("Starting game..")
 	game.Start()
 }

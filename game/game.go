@@ -22,6 +22,7 @@ var (
 	MOUSEX, MOUSEY int
 	PARTICLE_COUNT int
 )
+var ShowSkippedParticles = true // colors any particles that aren't being simulated red
 
 type Game struct{}
 
@@ -32,11 +33,11 @@ type Particle struct {
 	Color    color.Color
 }
 
-var ShowSkippedParticles = false // colors any particles that aren't being simulated red
-
+// CONST GAME VARIABLES
 const (
-	SCREENWIDTH, SCREENHEIGHT = 900, 640
-	GRAVITY                   = 1
+	SCREENWIDTH, SCREENHEIGHT     = 540, 360
+	GRAVITY                       = 1
+	MAX_PARTICLES             int = 20000 // max particles allowed on screen at once (in a perfect world this is SCREENWIDTH*SCREENHEIGHT)
 )
 
 func (g *Game) Update() error {
@@ -45,7 +46,7 @@ func (g *Game) Update() error {
 
 	CheckForParticleSpawn(GRID, MOUSEX, MOUSEY /*&wg*/) // Check for particle spawn
 
-	SpawnRain(10) // laggy atm
+	SpawnRain(5) // laggy atm
 	SimulateParticles()
 	return nil
 }
@@ -100,15 +101,23 @@ func PrepareGrid(width, height, MOUSEX, MOUSEY int) [][]Particle {
 }
 
 func IsParticleStable(x, y int) bool {
-	if y == GRID.Height/2-2 {
+	// Check if bottom at screen
+	if y == GRID.Height/2-1 {
 		if ShowSkippedParticles {
-			GetParticle(x, y).Color = color.RGBA{50, 160, 255, 255}
+			GetParticle(x, y).Color = color.RGBA{255, 120, 120, 255}
+		}
+		return true
+	}
+
+	if GetParticle(x-1, y+1).Active && GetParticle(x+1, y+1).Active && GetParticle(x, y+1).Active {
+		if ShowSkippedParticles {
+			GetParticle(x, y).Color = color.RGBA{255, 120, 120, 255}
 		}
 		return true
 	}
 
 	// Check if can skip
-	if y == GRID.Height/2-2 || GetParticle(x, y-1).Active && GetParticle(x, y+1).Active /*|| GetParticle(x, y+1).Active && (GetParticle(x+1, y).Active) && (GetParticle(x-1, y).Active)*/ {
+	if y == GRID.Height/2-1 || GetParticle(x, y-1).Active && GetParticle(x, y+1).Active /*|| GetParticle(x, y+1).Active && (GetParticle(x+1, y).Active) && (GetParticle(x-1, y).Active)*/ {
 		if ShowSkippedParticles {
 			GetParticle(x, y).Color = color.RGBA{255, 120, 120, 255}
 		}
@@ -119,10 +128,8 @@ func IsParticleStable(x, y int) bool {
 
 func SimulateParticles() {
 	// For each particle
-	//for x := 1; x < GRID.Width-1; x++ {
 	for x := GRID.Width - 1; x > 1; x-- {
-		//	for y := 0; y < GRID.Height/2-1; y++ {
-		for y := GRID.Height/2 - 2; y > 0; y-- {
+		for y := GRID.Height / 2; y > 0; y-- {
 
 			if GetParticle(x, y).Active && y > 0 {
 
@@ -174,25 +181,26 @@ func DrawGrid(renderer *ebiten.Image, GRID Grid, wg *sync.WaitGroup) {
 				op := &ebiten.DrawImageOptions{}
 				op.GeoM.Translate(float64(x), float64(y))
 				GetParticle(x, y).Pixel.Fill(GetParticle(x, y).Color)
-				//renderer.Set(x, y, GetParticle(x, y).Color)
-				renderer.DrawImage(GetParticle(x, y).Pixel, op)
+				renderer.Set(x, y, GetParticle(x, y).Color)
+				//renderer.DrawImage(GetParticle(x, y).Pixel, op)
 
 			}
 		}
 
 	}
 }
+
 func SpawnRain(spawnRate int) {
+	if PARTICLE_COUNT+spawnRate <= MAX_PARTICLES {
+		for drops := 0; drops < spawnRate; drops++ {
+			PARTICLE_COUNT++
+			xPos := rand.Intn(SCREENWIDTH)
+			yPos := rand.Intn(GRID.Height/2-2) + 100
 
-	for drops := 0; drops < spawnRate; drops++ {
-		PARTICLE_COUNT++
-		xPos := rand.Intn(SCREENWIDTH)
-		yPos := rand.Intn(GRID.Height/2-2) + 100
-
-		if !GRID.Map[xPos][yPos].Active {
-			GRID.Map[xPos][yPos].Active = true
+			if !GRID.Map[xPos][yPos].Active {
+				GRID.Map[xPos][yPos].Active = true
+			}
 		}
-		//	time.Sleep(100 * time.Millisecond)
 	}
 }
 
@@ -205,21 +213,31 @@ func GetParticle(x, y int) *Particle {
 	return &GRID.Map[x][y]
 }
 
+func SpawnParticle(x, y int) {
+	if PARTICLE_COUNT+1 <= MAX_PARTICLES {
+		// ACTIVATE particle pixel
+		PARTICLE_COUNT++
+		SetParticle(x, y, true)
+		log.Printf("Activating pixel @ [%v, %v] -- #%v", x, y, PARTICLE_COUNT)
+	}
+}
+
+func DisableParticle(x, y int) {
+	if GetParticle(x, y).Active {
+		SetParticle(x, y, false)
+		PARTICLE_COUNT--
+		log.Printf("Deactivating pixel @ [%v, %v] -- #%v", MOUSEX, MOUSEY, PARTICLE_COUNT)
+	}
+}
+
 func CheckForParticleSpawn(GRID Grid, MOUSEX int, MOUSEY int) {
 	// If mouse0 pressed
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButton(0)) && MOUSEX >= 0 && MOUSEY >= 0 {
 		// If particle pixel is INACTIVE
-
 		if !GetParticle(MOUSEX, MOUSEY).Active {
-			// ACTIVATE particle pixel
-			PARTICLE_COUNT++
-			SetParticle(MOUSEX, MOUSEY, true)
-			log.Printf("Activating pixel @ [%v, %v] -- #%v", MOUSEX, MOUSEY, PARTICLE_COUNT)
+			SpawnParticle(MOUSEX, MOUSEY)
 		} else {
-			SetParticle(MOUSEX, MOUSEY, false)
-
-			log.Printf("Deactivating pixel @ [%v, %v] -- #%v", MOUSEX, MOUSEY, PARTICLE_COUNT)
-
+			DisableParticle(MOUSEX, MOUSEY)
 		}
 	}
 }
