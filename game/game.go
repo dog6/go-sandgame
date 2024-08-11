@@ -85,7 +85,11 @@ func Start(Config *config.Configuration) {
 	ebiten.SetWindowSize(SCREENWIDTH, SCREENHEIGHT)
 	ebiten.SetWindowTitle(fmt.Sprintf("Sandgame %v", VERSION))
 	ebiten.SetTPS(Config.MaxTPS) // double max TPS
-	MAX_PARTICLES = Config.MaxParticles
+	if Config.MaxParticles != 0 {
+		MAX_PARTICLES = Config.MaxParticles
+	} else {
+		MAX_PARTICLES = SCREENWIDTH * SCREENHEIGHT
+	}
 	ShowSkippedParticles = Config.ShowSkippedParticles
 	// Log about rain
 	if Config.RainAmount != 0 {

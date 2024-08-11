@@ -1,11 +1,11 @@
 ## Window settings
 version: "v0.1.1"
-screenWidth: 1600 #DOES NOT WORK ATM
-screenHeight: 900
+screenWidth: 540 #DOES NOT WORK ATM
+screenHeight: 480 #900
 maxTPS: 120 # how many times update is called, will game game speed at the moment
 
 ## Game settings
-maxParticles: 1440000 # 1600*900, recommended is screenWidth*screenHeight
+maxParticles: 0 #1440000 # 1600*900, set to 0 for recommended is screenWidth*screenHeight
 rainAmount: 100 # how much rain spawns every frame. 0 turns rain off
 showSkippedParticles: false
 
