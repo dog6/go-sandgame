@@ -79,12 +79,14 @@ func Start(Config *config.Configuration) {
 
 	// Log config
 	Conf = *Config
-	VERSION = Config.VersionNumber
+	VERSION = Config.VersionNumber // set version number
 	Config.LogConfig()
+
 	SCREENWIDTH, SCREENHEIGHT = Config.ScreenWidth, Config.ScreenHeight
 	ebiten.SetWindowSize(SCREENWIDTH, SCREENHEIGHT)
 	ebiten.SetWindowTitle(fmt.Sprintf("Sandgame %v", VERSION))
 	ebiten.SetTPS(Config.MaxTPS) // double max TPS
+
 	if Config.MaxParticles != 0 {
 		MAX_PARTICLES = Config.MaxParticles
 	} else {
