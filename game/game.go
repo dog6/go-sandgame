@@ -109,6 +109,7 @@ func IsParticleStable(x, y int) bool {
 		return true
 	}
 
+	// Check if has 3 particles below ( cannot fall )
 	if GetParticle(x-1, y+1).Active && GetParticle(x+1, y+1).Active && GetParticle(x, y+1).Active {
 		if ShowSkippedParticles {
 			GetParticle(x, y).Color = color.RGBA{255, 120, 120, 255}
@@ -116,8 +117,8 @@ func IsParticleStable(x, y int) bool {
 		return true
 	}
 
-	// Check if can skip
-	if y == GRID.Height/2-1 || GetParticle(x, y-1).Active && GetParticle(x, y+1).Active /*|| GetParticle(x, y+1).Active && (GetParticle(x+1, y).Active) && (GetParticle(x-1, y).Active)*/ {
+	// Check if particle above & below
+	if GetParticle(x, y-1).Active && GetParticle(x, y+1).Active /*|| GetParticle(x, y+1).Active && (GetParticle(x+1, y).Active) && (GetParticle(x-1, y).Active)*/ {
 		if ShowSkippedParticles {
 			GetParticle(x, y).Color = color.RGBA{255, 120, 120, 255}
 		}
@@ -159,22 +160,26 @@ func SimulateParticles() {
 	}
 }
 
-func IndexToPos(idx int) (int, int) {
-	x := idx % SCREENWIDTH
-	var y int
-	if idx > SCREENWIDTH {
-		y = idx / SCREENWIDTH
-	} else {
-		y = 1
+/*
+	func IndexToPos(idx int) (int, int) {
+		x := idx % SCREENWIDTH
+		var y int
+		if idx > SCREENWIDTH {
+			y = idx / SCREENWIDTH
+		} else {
+			y = 1
+		}
+		return x, y
 	}
-	return x, y
-}
-
+*/
 func DrawGrid(renderer *ebiten.Image, GRID Grid, wg *sync.WaitGroup) {
 	defer wg.Done()
 	// Loop through all grid positions
 	for x := GRID.Width; x > 0; x-- {
 		for y := GRID.Height - 1; y > 0; y-- {
+			//for i := 0; i < SCREENHEIGHT*SCREENWIDTH; i++ {
+
+			//	x, y := IndexToPos(i)
 
 			if GetParticle(x, y).Active {
 				// Drawing
