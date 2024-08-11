@@ -9,4 +9,4 @@ maxParticles: 1440000 # 1600*900, recommended is screenWidth*screenHeight
 rainAmount: 10 # how much rain spawns every frame. 0 turns rain off
 showSkippedParticles: false
 
-verboseLogging: false
+verboseLogging: true

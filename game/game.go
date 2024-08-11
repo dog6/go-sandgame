@@ -54,7 +54,7 @@ func (g *Game) Update() error {
 	CheckForParticleSpawn(GRID, MOUSEX, MOUSEY /*&wg*/) // Check for particle spawn
 
 	if Conf.RainAmount > 0 {
-		SpawnRain(Config.RainAmount)
+		SpawnRain(Conf.RainAmount)
 	}
 
 	SimulateParticles()
@@ -88,11 +88,11 @@ func Start(Config *config.Configuration) {
 	SCREENWIDTH, SCREENHEIGHT = Config.ScreenWidth, Config.ScreenHeight
 	ShowSkippedParticles = Config.ShowSkippedParticles
 	// Log about rain
-	/*if Config.RainAmount != 0 {
+	if Config.RainAmount != 0 {
 		util.Log(fmt.Sprintf("Raining ENABLED -> %v drops/frame", Config.RainAmount))
 	} else {
 		util.Log("Rain DISABLED")
-	}*/
+	}
 
 	GRID = Grid{Width: SCREENHEIGHT, Height: SCREENHEIGHT}
 	GRID.Map = PrepareGrid(SCREENWIDTH, SCREENHEIGHT, MOUSEX, MOUSEY)
