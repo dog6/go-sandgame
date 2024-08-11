@@ -22,7 +22,7 @@ var (
 	MOUSEX, MOUSEY int
 	PARTICLE_COUNT int
 )
-var ShowSkippedParticles = true // colors any particles that aren't being simulated red
+var ShowSkippedParticles = false // colors any particles that aren't being simulated red
 
 type Game struct{}
 
@@ -35,7 +35,7 @@ type Particle struct {
 
 // CONST GAME VARIABLES
 const (
-	SCREENWIDTH, SCREENHEIGHT     = 540, 360
+	SCREENWIDTH, SCREENHEIGHT     = 540, 480
 	GRAVITY                       = 1
 	MAX_PARTICLES             int = 20000 // max particles allowed on screen at once (in a perfect world this is SCREENWIDTH*SCREENHEIGHT)
 )
