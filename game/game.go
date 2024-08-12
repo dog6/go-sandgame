@@ -8,18 +8,22 @@ import (
 	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	_ "github.com/silbinarywolf/preferdiscretegpu"
 )
 import (
 	"image/color"
+	"os"
 
 	"git.smallzcomputing.com/sand-game/config"
 	"git.smallzcomputing.com/sand-game/particles"
 	"git.smallzcomputing.com/sand-game/util"
+	"github.com/ebitenui/ebitenui"
+	"github.com/ebitenui/ebitenui/widget"
+	"github.com/golang/freetype/truetype"
 )
 
 var (
+	settingsUI                ebitenui.UI
 	MOUSEX, MOUSEY            int
 	PARTICLE_COUNT            int
 	MAX_PARTICLES             int = SCREENWIDTH * SCREENHEIGHT // max particles allowed on screen at once (in a perfect world this is SCREENWIDTH*SCREENHEIGHT)
@@ -30,14 +34,20 @@ var (
 	ShowSkippedParticles      = false // renders particles not being simulated as red
 )
 
-type Game struct{}
+type Game struct {
+	ui *ebitenui.UI
+}
 
 var GRID util.Grid
+
+var GameInfoLabel *widget.Text
 
 // CONST GAME VARIABLES
 const GRAVITY = 1
 
 func (g *Game) Update() error {
+	GameInfoLabel.Label = fmt.Sprintf("TPS: %.2f\nFPS: %.2f\nPC: %v", ebiten.ActualTPS(), ebiten.ActualFPS(), PARTICLE_COUNT)
+	g.ui.Update()
 
 	MOUSEX, MOUSEY = ebiten.CursorPosition() // Capture mouse position
 
@@ -53,9 +63,10 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(Conf.BackgroundColor.ToColor())
-	ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %v\nFPS: %v\nPC: %v", ebiten.ActualTPS(), ebiten.ActualFPS(), PARTICLE_COUNT))
-	wg := sync.WaitGroup{}
+	//ebitenutil.DebugPrint(screen, )
 
+	g.ui.Draw(screen)
+	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go DrawGrid(screen, GRID, &wg)
 	wg.Wait()
@@ -65,6 +76,42 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 	return SCREENWIDTH / 2, SCREENHEIGHT / 2
 }
 
+func SetupUI() ebitenui.UI {
+	// This creates the root container for this UI.
+	// All other UI elements must be added to this container.
+	rootContainer := widget.NewContainer()
+
+	// This adds the root container to the UI, so that it will be rendered.
+	eui := &ebitenui.UI{
+		Container: rootContainer,
+	}
+
+	data, err := os.ReadFile(Conf.FontFilePath)
+
+	if err != nil {
+		log.Fatalf("%v\n", data)
+	}
+
+	// This loads a font and creates a font face.
+	ttfFont, err := truetype.Parse(data)
+	if err != nil {
+		log.Fatal("Error Parsing Font", err)
+	}
+	fontFace := truetype.NewFace(ttfFont, &truetype.Options{
+		Size: 24,
+	})
+
+	// This creates a text widget that says "Hello World!"
+	GameInfoLabel = widget.NewText(
+		widget.TextOpts.Text("", fontFace, Conf.UITextColor.ToColor()),
+	)
+
+	// To display the text widget, we have to add it to the root container.
+	rootContainer.AddChild(GameInfoLabel)
+
+	return *eui
+}
+
 func Start(Config *config.Configuration) {
 
 	// Log config
@@ -72,18 +119,21 @@ func Start(Config *config.Configuration) {
 	VERSION = Config.VersionNumber // set version number
 	Config.LogConfig()
 
+	// Set window size
 	SCREENWIDTH, SCREENHEIGHT = Config.ScreenSize.X, Config.ScreenSize.Y
 	util.Log(fmt.Sprintf("Setting window size to X: %v, Y: %v", SCREENWIDTH, SCREENHEIGHT))
 	ebiten.SetWindowSize(SCREENWIDTH, SCREENHEIGHT)
 	ebiten.SetWindowTitle(fmt.Sprintf("Sandgame %v", VERSION))
 	ebiten.SetTPS(Config.MaxTPS) // double max TPS
 
+	// Set max particles ( check for 0, which = SCREENWIDTH*SCREENHEIGHT)
 	if Config.MaxParticles != 0 {
 		MAX_PARTICLES = Config.MaxParticles
 	} else {
 		MAX_PARTICLES = SCREENWIDTH * SCREENHEIGHT
 	}
 	ShowSkippedParticles = Config.ShowSkippedParticles
+
 	// Log about rain
 	if Config.RainRate != 0 {
 		util.Log(fmt.Sprintf("Raining ENABLED -> %v drops/frame", Config.RainRate))
@@ -91,16 +141,24 @@ func Start(Config *config.Configuration) {
 		util.Log("Rain DISABLED")
 	}
 
+	// Setup UI
+	eui := SetupUI()
+
+	// Prepare grid
 	GRID = util.Grid{Width: SCREENHEIGHT, Height: SCREENHEIGHT}
 	GRID.Map = PrepareGrid(SCREENWIDTH, SCREENHEIGHT, MOUSEX, MOUSEY, Config.ParticleColor.ToColor())
 
-	if err := ebiten.RunGame(&Game{}); err != nil {
+	game := Game{
+		ui: &eui,
+	}
+
+	// Run game
+	if err := ebiten.RunGame(&game); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func PrepareGrid(width, height, MOUSEX, MOUSEY int, col color.RGBA) [][]util.Particle {
-	// Prepare Gridmap
 	util.Log(fmt.Sprintf("Particle color: R: %v, G: %v, B: %v, A: %v", col.R, col.G, col.B, col.A))
 	result := make([][]util.Particle, width)
 	for i := 0; i < width; i++ {

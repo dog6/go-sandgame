@@ -15,6 +15,8 @@ type Configuration struct {
 	ScreenSize           util.Vector2 `yaml:"screenSize"`
 	ParticleColor        util.RGBA    `yaml:"particleColor"`
 	BackgroundColor      util.RGBA    `yaml:"backgroundColor"`
+	FontFilePath         string       `yaml:"fontFilePath"`
+	UITextColor          util.RGBA    `yaml:"uiTextColor"`
 	MaxTPS               int          `yaml:"maxTPS"`
 	MaxParticles         int          `yaml:"maxParticles"`
 	RainRate             int          `yaml:"rainRate"`

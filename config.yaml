@@ -1,10 +1,15 @@
 ##  [ DEV CONFIG ]  ##
-## Window Settings
 version: "v0.1.1"
+verboseLogging: true
+
+## Window settings
 maxTPS: 60
 screenSize:
   X: 800
   Y: 600
+
+
+## Game settings
 backgroundColor:
   R: 30
   G: 30
@@ -21,5 +26,12 @@ skippedParticleColor:
   G: 120
   B: 120
   A: 255
-verboseLogging: true
-rainRate: 10
+rainRate: 1
+
+## UI Settings
+fontFilePath: "res/font.ttf"
+uiTextColor:
+  R: 255
+  G: 255
+  B: 255
+  A: 255
