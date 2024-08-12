@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"git.smallzcomputing.com/sand-game/util"
+	"git.smallzcomputing.com/sand-game/src/util"
 	"github.com/go-yaml/yaml"
 )
 

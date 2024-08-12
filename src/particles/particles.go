@@ -5,7 +5,7 @@ import (
 	"image/color"
 	"sync"
 
-	"git.smallzcomputing.com/sand-game/util"
+	"git.smallzcomputing.com/sand-game/src/util"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -15,6 +15,14 @@ var (
 	ShowSkippedParticles bool = false
 )
 
+func ParticleCount() int {
+	return PARTICLE_COUNT
+}
+
+func SetMaxParticles(max int) {
+	MAX_PARTICLES = max
+}
+
 func Init(maxParticles int, screenSize util.Vector2, showSkipped bool) {
 	if maxParticles != 0 {
 		MAX_PARTICLES = maxParticles
@@ -22,7 +30,6 @@ func Init(maxParticles int, screenSize util.Vector2, showSkipped bool) {
 		MAX_PARTICLES = screenSize.X * screenSize.Y
 	}
 	ShowSkippedParticles = showSkipped
-
 }
 
 func IsParticleStable(GRID util.Grid, showSkipped bool, x, y int) bool {
@@ -74,20 +81,20 @@ func DisableParticle(pCount *int, GRID util.Grid, x, y int) {
 	}
 }
 
-func DrawColLength(renderer *ebiten.Image, GRID util.Grid, x, y int) {
+func DrawColLength(renderer *ebiten.Image, GRID util.Grid, x, y *int) {
 	var tmpY int
 	particleEnabled := true
-	for tmpY = y; particleEnabled; tmpY-- {
-		if !GetParticle(GRID, x, tmpY).Active {
+	for tmpY = *y; particleEnabled; tmpY-- {
+		if !GetParticle(GRID, *x, tmpY).Active {
 			particleEnabled = false
 			break
 		}
 		//particles.GetParticle(GRID, x, tmpY).Color = color.RGBA{0, 0, 255, 255} // Colors particles drawn as group blue
-		DrawParticle(GRID, renderer, x, tmpY)
+		DrawParticle(GRID, renderer, *x, tmpY)
 
 	}
 	//util.Log(fmt.Sprintf("Skipped %v particle draw cycles in column %v", y-tmpY, x))
-	y -= y - tmpY // += crashes
+	*y -= *y - tmpY // += crashes
 
 }
 
@@ -100,11 +107,11 @@ func DrawGrid(renderer *ebiten.Image, GRID util.Grid, wg *sync.WaitGroup) {
 
 			if GetParticle(GRID, x, y).Active {
 
-				/*if particles.GetParticle(GRID, x, y-1).Active {
-					DrawColLength(renderer, GRID, x, y)
-				} else {*/
-				DrawParticle(GRID, renderer, x, y)
-				//}
+				if GetParticle(GRID, x, y+1).Active {
+					DrawColLength(renderer, GRID, &x, &y)
+				} else {
+					DrawParticle(GRID, renderer, x, y)
+				}
 			}
 
 		}

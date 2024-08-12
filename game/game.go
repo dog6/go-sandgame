@@ -16,7 +16,7 @@ import (
 
 	"git.smallzcomputing.com/sand-game/config"
 	"git.smallzcomputing.com/sand-game/particles"
-	"git.smallzcomputing.com/sand-game/util"
+	"git.smallzcomputing.com/sand-game/src/util"
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/golang/freetype/truetype"
@@ -25,8 +25,6 @@ import (
 var (
 	settingsUI                ebitenui.UI
 	MOUSEX, MOUSEY            int
-	PARTICLE_COUNT            int
-	MAX_PARTICLES             int = SCREENWIDTH * SCREENHEIGHT // max particles allowed on screen at once (in a perfect world this is SCREENWIDTH*SCREENHEIGHT)
 	Config                    config.Configuration
 	SCREENWIDTH, SCREENHEIGHT = 1600, 900
 	VERSION                   string // version of game
@@ -46,7 +44,7 @@ var GameInfoLabel *widget.Text
 const GRAVITY = 1
 
 func (g *Game) Update() error {
-	GameInfoLabel.Label = fmt.Sprintf("TPS: %.2f\nFPS: %.2f\nPC: %v", ebiten.ActualTPS(), ebiten.ActualFPS(), PARTICLE_COUNT)
+	GameInfoLabel.Label = fmt.Sprintf("TPS: %.2f\nFPS: %.2f\nPC: %v", ebiten.ActualTPS(), ebiten.ActualFPS(), particles.ParticleCount())
 	g.ui.Update()
 
 	MOUSEX, MOUSEY = ebiten.CursorPosition() // Capture mouse position

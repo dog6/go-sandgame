@@ -3,7 +3,7 @@ package main
 import (
 	"git.smallzcomputing.com/sand-game/config"
 	"git.smallzcomputing.com/sand-game/game"
-	"git.smallzcomputing.com/sand-game/util"
+	"git.smallzcomputing.com/sand-game/src/util"
 )
 
 var Conf config.Configuration

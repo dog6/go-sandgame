@@ -12,15 +12,12 @@ import (
 )
 import (
 	"image/color"
-	"os"
 
 	"git.smallzcomputing.com/sand-game/src/config"
 	"git.smallzcomputing.com/sand-game/src/particles"
 	"git.smallzcomputing.com/sand-game/src/sandgameUI"
 	"git.smallzcomputing.com/sand-game/src/util"
 	"github.com/ebitenui/ebitenui"
-	"github.com/ebitenui/ebitenui/widget"
-	"github.com/golang/freetype/truetype"
 )
 
 var (
@@ -43,7 +40,9 @@ var GRID util.Grid
 const GRAVITY = 1
 
 func (g *Game) Update() error {
-	sandgameUI.UpdateUI(g)
+
+	sandgameUI.UpdateUI()
+	g.ui.Update()
 
 	MOUSEX, MOUSEY = ebiten.CursorPosition() // Capture mouse position
 
@@ -72,45 +71,6 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 	return SCREENWIDTH / 2, SCREENHEIGHT / 2
 }
 
-func SetupUI() ebitenui.UI {
-	// This creates the root container for this UI.
-	// All other UI elements must be added to this container.
-	rootContainer := widget.NewContainer()
-
-	// This adds the root container to the UI, so that it will be rendered.
-	eui := &ebitenui.UI{
-		Container: rootContainer,
-	}
-
-	data, err := os.ReadFile(Conf.FontFilePath)
-
-	if err != nil {
-		log.Fatalf("%v\n", data)
-	}
-
-	// This loads a font and creates a font face.
-	ttfFont, err := truetype.Parse(data)
-	if err != nil {
-		log.Fatal("Error Parsing Font", err)
-	}
-	fontFace := truetype.NewFace(ttfFont, &truetype.Options{
-		Size:       24,
-		DPI:        72,
-		SubPixelsX: 8,
-		SubPixelsY: 8,
-	})
-
-	// This creates a text widget that says "Hello World!"
-	GameInfoLabel = widget.NewText(
-		widget.TextOpts.Text("", fontFace, Conf.UITextColor.ToColor()),
-	)
-
-	// To display the text widget, we have to add it to the root container.
-	rootContainer.AddChild(GameInfoLabel)
-
-	return *eui
-}
-
 func Start(Config *config.Configuration) {
 
 	// Log config
@@ -135,7 +95,7 @@ func Start(Config *config.Configuration) {
 	}
 
 	// Setup UI
-	eui := SetupUI()
+	eui := sandgameUI.SetupUI(Config)
 
 	// Prepare grid
 	GRID = util.Grid{Width: SCREENHEIGHT, Height: SCREENHEIGHT}

@@ -1,13 +1,14 @@
 ##  [ DEV CONFIG ]  ##
 version: "v0.1.1"
+# Gravity is borked atm
+gravity: 1
 verboseLogging: true
 
 ## Window settings
 maxTPS: 60
 screenSize:
-  X: 800
-  Y: 600
-
+  X: 1200
+  Y: 720
 
 ## Game settings
 backgroundColor:
@@ -20,16 +21,16 @@ particleColor:
    G: 255
    B: 255
    A: 255
-showSkippedParticles: false
+showSkippedParticles: true
 skippedParticleColor:
   R: 255
-  G: 120
-  B: 120
+  G: 140
+  B: 140
   A: 255
 rainRate: 1
 
 ## UI Settings
-fontFilePath: "res/font.ttf"
+fontFilePath: "res/fonts/font2.ttf"
 uiTextColor:
   R: 255
   G: 255

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"image/color"
 
-	"git.smallzcomputing.com/sand-game/util"
+	"git.smallzcomputing.com/sand-game/src/util"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -45,7 +45,7 @@ func SpawnParticle(GRID util.Grid, maxP, pCount *int, x, y int) {
 		// ACTIVATE particle pixel
 		*pCount++
 		SetParticle(GRID, x, y, true)
-		util.Log(fmt.Sprintf("Activating pixel @ [%v, %v] -- #%v", x, y, &pCount))
+		util.Log(fmt.Sprintf("Activating pixel @ [%v, %v] -- #%v", x, y, *pCount))
 	}
 }
 
@@ -53,6 +53,6 @@ func DisableParticle(pCount *int, GRID util.Grid, x, y int) {
 	if GetParticle(GRID, x, y).Active {
 		SetParticle(GRID, x, y, false)
 		*pCount--
-		util.Log(fmt.Sprintf("Deactivating pixel @ [%v, %v] -- #%v", x, y, &pCount))
+		util.Log(fmt.Sprintf("Deactivating pixel @ [%v, %v] -- #%v", x, y, *pCount))
 	}
 }

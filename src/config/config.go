@@ -13,6 +13,7 @@ var DefaultConfigPath string = "./config.yaml"
 type Configuration struct {
 	VersionNumber        string       `yaml:"version"`
 	ScreenSize           util.Vector2 `yaml:"screenSize"`
+	GRAVITY              int          `yaml:"gravity"`
 	ParticleColor        util.RGBA    `yaml:"particleColor"`
 	BackgroundColor      util.RGBA    `yaml:"backgroundColor"`
 	FontFilePath         string       `yaml:"fontFilePath"`
