@@ -6,17 +6,15 @@ import (
 	"os"
 
 	"git.smallzcomputing.com/sand-game/src/config"
-	"git.smallzcomputing.com/sand-game/src/particles"
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/golang/freetype/truetype"
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 var GameInfoLabel *widget.Text
 
-func UpdateUI() {
-	GameInfoLabel.Label = fmt.Sprintf("TPS: %.1f | FPS: %.1f | PC: %v", ebiten.ActualTPS(), ebiten.ActualFPS(), particles.PARTICLE_COUNT)
+func UpdateUI(tps, fps float64, particleCount int) {
+	GameInfoLabel.Label = fmt.Sprintf("TPS: %.1f | FPS: %.1f | PC: %v", tps, fps, particleCount)
 }
 
 func SetupUI(Conf *config.Configuration) ebitenui.UI {

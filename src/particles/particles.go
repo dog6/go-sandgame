@@ -10,25 +10,10 @@ import (
 )
 
 var (
-	PARTICLE_COUNT       int = 0
-	MAX_PARTICLES        int
 	ShowSkippedParticles bool = false
 )
 
-func ParticleCount() int {
-	return PARTICLE_COUNT
-}
-
-func SetMaxParticles(max int) {
-	MAX_PARTICLES = max
-}
-
-func Init(maxParticles int, screenSize util.Vector2, showSkipped bool) {
-	if maxParticles != 0 {
-		MAX_PARTICLES = maxParticles
-	} else {
-		MAX_PARTICLES = screenSize.X * screenSize.Y
-	}
+func Init(screenSize util.Vector2, showSkipped bool) {
 	ShowSkippedParticles = showSkipped
 }
 

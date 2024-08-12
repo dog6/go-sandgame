@@ -21,6 +21,7 @@ import (
 )
 
 var (
+	PARTICLE_COUNT            int = 0
 	settingsUI                ebitenui.UI
 	MOUSEX, MOUSEY            int
 	MAX_PARTICLES             int = SCREENWIDTH * SCREENHEIGHT // max particles allowed on screen at once (in a perfect world this is SCREENWIDTH*SCREENHEIGHT)
@@ -40,13 +41,12 @@ var GRID util.Grid
 const GRAVITY = 1
 
 func (g *Game) Update() error {
-
-	sandgameUI.UpdateUI()
+	sandgameUI.UpdateUI(ebiten.ActualTPS(), ebiten.ActualFPS(), PARTICLE_COUNT)
 	g.ui.Update()
 
 	MOUSEX, MOUSEY = ebiten.CursorPosition() // Capture mouse position
 
-	particles.CheckForParticleSpawn(GRID, MOUSEX, MOUSEY, &MAX_PARTICLES, &particles.PARTICLE_COUNT /*&wg*/) // Check for particle spawn
+	particles.CheckForParticleSpawn(GRID, MOUSEX, MOUSEY, &MAX_PARTICLES, &PARTICLE_COUNT /*&wg*/) // Check for particle spawn
 
 	if Conf.RainRate > 0 {
 		SpawnRain(Conf.RainRate)
@@ -85,7 +85,7 @@ func Start(Config *config.Configuration) {
 	ebiten.SetWindowTitle(fmt.Sprintf("Sandgame %v", VERSION))
 	ebiten.SetTPS(Config.MaxTPS) // double max TPS
 
-	particles.Init(MAX_PARTICLES, Config.ScreenSize, Conf.ShowSkippedParticles)
+	particles.Init(Config.ScreenSize, Conf.ShowSkippedParticles)
 
 	// Log about rain
 	if Config.RainRate != 0 {
@@ -127,9 +127,9 @@ func PrepareGrid(width, height, MOUSEX, MOUSEY int, col color.RGBA) [][]util.Par
 }
 
 func SpawnRain(spawnRate int) {
-	if particles.PARTICLE_COUNT+spawnRate <= MAX_PARTICLES {
+	if PARTICLE_COUNT+spawnRate <= MAX_PARTICLES {
 		for drops := 0; drops < spawnRate; drops++ {
-			particles.PARTICLE_COUNT++
+			PARTICLE_COUNT++
 			xPos := rand.Intn(SCREENWIDTH)
 			yPos := rand.Intn(50) //rand.Intn(GRID.Height/2-2) + 100
 
