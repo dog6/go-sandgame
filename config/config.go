@@ -3,22 +3,24 @@ package config
 import (
 	"log"
 	"os"
-	"reflect"
 
+	"git.smallzcomputing.com/sand-game/util"
 	"github.com/go-yaml/yaml"
 )
 
 var DefaultConfigPath string = "./config.yaml"
 
 type Configuration struct {
-	VersionNumber        string `yaml:"version"`
-	ScreenWidth          int    `yaml:"screenWidth"`
-	ScreenHeight         int    `yaml:"screenHeight"`
-	MaxTPS               int    `yaml:"maxTPS"`
-	MaxParticles         int    `yaml:"maxParticles"`
-	RainAmount           int    `yaml:"rainAmount"`
-	ShowSkippedParticles bool   `yaml:"showSkippedParticles"`
-	VerboseLogging       bool   `yaml:"verboseLogging"`
+	VersionNumber        string       `yaml:"version"`
+	ScreenSize           util.Vector2 `yaml:"screenSize"`
+	ParticleColor        util.RGBA    `yaml:"particleColor"`
+	BackgroundColor      util.RGBA    `yaml:"backgroundColor"`
+	MaxTPS               int          `yaml:"maxTPS"`
+	MaxParticles         int          `yaml:"maxParticles"`
+	RainRate             int          `yaml:"rainRate"`
+	ShowSkippedParticles bool         `yaml:"showSkippedParticles"`
+	SkippedParticleColor util.RGBA    `yaml:"skippedParticleColor"`
+	VerboseLogging       bool         `yaml:"verboseLogging"`
 }
 
 func (conf *Configuration) ReadConfig() error {
@@ -40,15 +42,15 @@ func (conf *Configuration) ReadConfig() error {
 	return nil // config was read successfully
 }
 
+// Does not represent data captured after marshaling
 func (conf *Configuration) LogConfig() {
-	val := reflect.TypeOf(conf).Elem() // dereference pointer
-	typ := reflect.TypeOf(conf).Elem() // dereference pointer
+
+	data, err := os.ReadFile("./config.yaml")
+	if err != nil {
+		log.Fatalf("[ERROR] Failed to read config.yaml while logging.")
+	}
 
 	log.Println("============== Config ==============")
-	for i := 0; i < val.NumField(); i++ {
-		fieldValue := val.Field(i)
-		fieldName := typ.Field(i).Name
-		log.Printf("%v: %v\n", fieldName, fieldValue)
-	}
+	log.Printf("%v\n", string(data))
 	log.Println("====================================")
 }

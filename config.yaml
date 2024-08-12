@@ -1,12 +1,25 @@
-## Window settings
+##  [ DEV CONFIG ]  ##
+## Window Settings
 version: "v0.1.1"
-screenWidth: 1600
-screenHeight: 900
-maxTPS: 60 # how many times update is called, will game game speed at the moment
-
-## Game settings
-maxParticles: 0 #1440000 # 1600*900, set to 0 for recommended is screenWidth*screenHeight
-rainAmount: 10 # how much rain spawns every frame. 0 turns rain off
+maxTPS: 60
+screenSize:
+  X: 800
+  Y: 600
+backgroundColor:
+  R: 30
+  G: 30
+  B: 30
+  A: 255
+particleColor: 
+   R: 255
+   G: 255
+   B: 255
+   A: 255
 showSkippedParticles: false
-
+skippedParticleColor:
+  R: 255
+  G: 120
+  B: 120
+  A: 255
 verboseLogging: true
+rainRate: 10

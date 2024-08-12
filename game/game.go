@@ -3,46 +3,36 @@ package game
 import (
 	"C"
 	"fmt"
-	"image/color"
 	"log"
 	"math/rand"
 	"sync"
 
-	particles "git.smallzcomputing.com/sand-game/particles"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	_ "github.com/silbinarywolf/preferdiscretegpu"
 )
 import (
+	"image/color"
+
 	"git.smallzcomputing.com/sand-game/config"
+	"git.smallzcomputing.com/sand-game/particles"
 	"git.smallzcomputing.com/sand-game/util"
 )
 
-type Grid struct {
-	Width, Height int
-	Map           [][]Particle
-}
-
 var (
-	GRID                      Grid
 	MOUSEX, MOUSEY            int
 	PARTICLE_COUNT            int
+	MAX_PARTICLES             int = SCREENWIDTH * SCREENHEIGHT // max particles allowed on screen at once (in a perfect world this is SCREENWIDTH*SCREENHEIGHT)
 	Config                    config.Configuration
-	SCREENWIDTH, SCREENHEIGHT        = 1600, 900
-	MAX_PARTICLES             int    = SCREENWIDTH * SCREENHEIGHT // max particles allowed on screen at once (in a perfect world this is SCREENWIDTH*SCREENHEIGHT)
-	VERSION                   string                              // version of game
+	SCREENWIDTH, SCREENHEIGHT = 1600, 900
+	VERSION                   string // version of game
 	Conf                      config.Configuration
 	ShowSkippedParticles      = false // renders particles not being simulated as red
 )
 
 type Game struct{}
 
-type Particle struct {
-	Active   bool
-	Position particles.Vector2
-	Pixel    *ebiten.Image
-	Color    color.Color
-}
+var GRID util.Grid
 
 // CONST GAME VARIABLES
 const GRAVITY = 1
@@ -53,8 +43,8 @@ func (g *Game) Update() error {
 
 	CheckForParticleSpawn(GRID, MOUSEX, MOUSEY /*&wg*/) // Check for particle spawn
 
-	if Conf.RainAmount > 0 {
-		SpawnRain(Conf.RainAmount)
+	if Conf.RainRate > 0 {
+		SpawnRain(Conf.RainRate)
 	}
 
 	SimulateParticles()
@@ -62,8 +52,8 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	screen.Fill(Conf.BackgroundColor.ToColor())
 	ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %v\nFPS: %v\nPC: %v", ebiten.ActualTPS(), ebiten.ActualFPS(), PARTICLE_COUNT))
-
 	wg := sync.WaitGroup{}
 
 	wg.Add(1)
@@ -82,7 +72,8 @@ func Start(Config *config.Configuration) {
 	VERSION = Config.VersionNumber // set version number
 	Config.LogConfig()
 
-	SCREENWIDTH, SCREENHEIGHT = Config.ScreenWidth, Config.ScreenHeight
+	SCREENWIDTH, SCREENHEIGHT = Config.ScreenSize.X, Config.ScreenSize.Y
+	util.Log(fmt.Sprintf("Setting window size to X: %v, Y: %v", SCREENWIDTH, SCREENHEIGHT))
 	ebiten.SetWindowSize(SCREENWIDTH, SCREENHEIGHT)
 	ebiten.SetWindowTitle(fmt.Sprintf("Sandgame %v", VERSION))
 	ebiten.SetTPS(Config.MaxTPS) // double max TPS
@@ -94,34 +85,29 @@ func Start(Config *config.Configuration) {
 	}
 	ShowSkippedParticles = Config.ShowSkippedParticles
 	// Log about rain
-	if Config.RainAmount != 0 {
-		util.Log(fmt.Sprintf("Raining ENABLED -> %v drops/frame", Config.RainAmount))
+	if Config.RainRate != 0 {
+		util.Log(fmt.Sprintf("Raining ENABLED -> %v drops/frame", Config.RainRate))
 	} else {
 		util.Log("Rain DISABLED")
 	}
 
-	GRID = Grid{Width: SCREENHEIGHT, Height: SCREENHEIGHT}
-	GRID.Map = PrepareGrid(SCREENWIDTH, SCREENHEIGHT, MOUSEX, MOUSEY)
+	GRID = util.Grid{Width: SCREENHEIGHT, Height: SCREENHEIGHT}
+	GRID.Map = PrepareGrid(SCREENWIDTH, SCREENHEIGHT, MOUSEX, MOUSEY, Config.ParticleColor.ToColor())
 
 	if err := ebiten.RunGame(&Game{}); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func (particle *Particle) PrepareParticle(MOUSEX, MOUSEY int) *Particle {
-	result := Particle{Active: false, Position: particles.Vector2{X: MOUSEX, Y: MOUSEY}, Pixel: ebiten.NewImage(1, 1), Color: color.RGBA{255, 255, 255, 255}}
-	return &result
-}
-
-func PrepareGrid(width, height, MOUSEX, MOUSEY int) [][]Particle {
+func PrepareGrid(width, height, MOUSEX, MOUSEY int, col color.RGBA) [][]util.Particle {
 	// Prepare Gridmap
-	result := make([][]Particle, width)
-
+	util.Log(fmt.Sprintf("Particle color: R: %v, G: %v, B: %v, A: %v", col.R, col.G, col.B, col.A))
+	result := make([][]util.Particle, width)
 	for i := 0; i < width; i++ {
-		result[i] = make([]Particle, height)
+		result[i] = make([]util.Particle, height)
 
 		for j := 0; j < height; j++ {
-			result[i][j] = *result[i][j].PrepareParticle(MOUSEX, MOUSEY)
+			result[i][j] = *result[i][j].PrepareParticle(MOUSEX, MOUSEY, col /*color.RGBA{R:255, G:255, B: 255, A: 255}*/)
 		}
 
 	}
@@ -129,58 +115,30 @@ func PrepareGrid(width, height, MOUSEX, MOUSEY int) [][]Particle {
 	return result
 }
 
-func IsParticleStable(x, y int) bool {
-	// Check if bottom at screen
-	if y == GRID.Height/2-1 {
-		if ShowSkippedParticles {
-			GetParticle(x, y).Color = color.RGBA{255, 120, 120, 255}
-		}
-		return true
-	}
-
-	// Check if has 3 particles below ( cannot fall )
-	if GetParticle(x-1, y+1).Active && GetParticle(x+1, y+1).Active && GetParticle(x, y+1).Active {
-		if ShowSkippedParticles {
-			GetParticle(x, y).Color = color.RGBA{255, 120, 120, 255}
-		}
-		return true
-	}
-
-	// Check if particle above & below
-	/*if GetParticle(x, y-1).Active && GetParticle(x, y+1).Active {
-		if ShowSkippedParticles {
-			GetParticle(x, y).Color = color.RGBA{255, 120, 120, 255}
-		}
-		return true
-	}
-	return false*/
-	return false
-}
-
 func SimulateParticles() {
 	// For each particle
 	for x := GRID.Width; x > 0; x-- {
 		for y := GRID.Height / 2; y > 0; y-- {
 
-			if GetParticle(x, y).Active && y > 0 {
+			if particles.GetParticle(GRID, x, y).Active && y > 0 {
 
-				if IsParticleStable(x, y) {
+				if particles.IsParticleStable(GRID, ShowSkippedParticles, x, y) {
 					continue
 				}
 
 				// Check if can fall
 				if !GRID.Map[x][y+GRAVITY].Active {
-					SetParticle(x, y, false)
-					SetParticle(x, y+GRAVITY, true)
+					particles.SetParticle(GRID, x, y, false)
+					particles.SetParticle(GRID, x, y+GRAVITY, true)
 				} else {
 
 					// Sand effect
 					if !GRID.Map[x-1][y+GRAVITY].Active {
-						SetParticle(x, y, false)
-						SetParticle(x-1, y+GRAVITY, true)
+						particles.SetParticle(GRID, x, y, false)
+						particles.SetParticle(GRID, x-1, y+GRAVITY, true)
 					} else if !GRID.Map[x+1][y+GRAVITY].Active {
-						SetParticle(x, y, false)          // disable this particle
-						SetParticle(x+1, y+GRAVITY, true) // set particle below to active
+						particles.SetParticle(GRID, x, y, false)          // disable this particle
+						particles.SetParticle(GRID, x+1, y+GRAVITY, true) // set particle below to active
 					} else {
 						continue
 					}
@@ -205,16 +163,16 @@ Cool, but inefficient
 	}
 
 TODO: Chunking
-func IsSurrounded(particle *Particle) bool {
+func IsSurrounded(particle *util.Particle) bool {
 	pos := particle.Position
-	p1 := GetParticle(pos.X-1, pos.Y+1).Active
-	p2 := GetParticle(pos.X, pos.Y+1).Active
-	p3 := GetParticle(pos.X+1, pos.Y+1).Active
-	p4 := GetParticle(pos.X-1, pos.Y).Active
-	p6 := GetParticle(pos.X+1, pos.Y).Active
-	p7 := GetParticle(pos.X-1, pos.Y-1).Active
-	p8 := GetParticle(pos.X, pos.Y-1).Active
-	p9 := GetParticle(pos.X+1, pos.Y-1).Active
+	p1 := Getutil.Particle(pos.X-1, pos.Y+1).Active
+	p2 := Getutil.Particle(pos.X, pos.Y+1).Active
+	p3 := Getutil.Particle(pos.X+1, pos.Y+1).Active
+	p4 := Getutil.Particle(pos.X-1, pos.Y).Active
+	p6 := Getutil.Particle(pos.X+1, pos.Y).Active
+	p7 := Getutil.Particle(pos.X-1, pos.Y-1).Active
+	p8 := Getutil.Particle(pos.X, pos.Y-1).Active
+	p9 := Getutil.Particle(pos.X+1, pos.Y-1).Active
 
 	if p1 && p2 && p3 && p4 && p6 && p7 && p8 && p9 {
 		return true
@@ -227,50 +185,46 @@ func Draw3x3Chunk(renderer *ebiten.Image, GRID Grid, x, y int) {
 	for i := 0; i < 9; i++ {
 		switch i {
 		case 1:
-			DrawParticle(renderer, x-1, y+1)
+			Drawutil.Particle(renderer, x-1, y+1)
 			break
 		case 2:
-			DrawParticle(renderer, x, y+1)
+			Drawutil.Particle(renderer, x, y+1)
 			break
 		case 3:
-			DrawParticle(renderer, x+1, y+1)
+			Drawutil.Particle(renderer, x+1, y+1)
 			break
 		case 4:
-			DrawParticle(renderer, x-1, y)
+			Drawutil.Particle(renderer, x-1, y)
 			break
 		case 5:
-			DrawParticle(renderer, x, y)
+			Drawutil.Particle(renderer, x, y)
 			break
 		case 6:
-			DrawParticle(renderer, x+1, y)
+			Drawutil.Particle(renderer, x+1, y)
 			break
 		case 7:
-			DrawParticle(renderer, x-1, y-1)
+			Drawutil.Particle(renderer, x-1, y-1)
 			break
 		case 8:
-			DrawParticle(renderer, x, y-1)
+			Drawutil.Particle(renderer, x, y-1)
 			break
 		case 9:
-			DrawParticle(renderer, x+1, y-1)
+			Drawutil.Particle(renderer, x+1, y-1)
 			break
 		}
 	}
 }
 */
 
-func DrawParticle(renderer *ebiten.Image, x, y int) {
-	renderer.Set(x, y, GetParticle(x, y).Color)
-}
-
-func DrawGrid(renderer *ebiten.Image, GRID Grid, wg *sync.WaitGroup) {
+func DrawGrid(renderer *ebiten.Image, GRID util.Grid, wg *sync.WaitGroup) {
 	defer wg.Done()
 	// draw from bottom right to top left
 	// Loop through all grid positions
 	for x := GRID.Width; x > 0; x-- {
 		for y := GRID.Height - 1; y > 0; y-- {
 
-			if GetParticle(x, y).Active {
-				DrawParticle(renderer, x, y)
+			if particles.GetParticle(GRID, x, y).Active {
+				particles.DrawParticle(GRID, renderer, x, y)
 			}
 
 		}
@@ -292,40 +246,15 @@ func SpawnRain(spawnRate int) {
 	}
 }
 
-// func SetParticle(particle *Particle, isActive bool) {
-func SetParticle(x, y int, isActive bool) {
-	GetParticle(x, y).Active = isActive
-}
-
-func GetParticle(x, y int) *Particle {
-	return &GRID.Map[x][y]
-}
-
-func SpawnParticle(x, y int) {
-	if PARTICLE_COUNT+1 <= MAX_PARTICLES {
-		// ACTIVATE particle pixel
-		PARTICLE_COUNT++
-		SetParticle(x, y, true)
-		util.Log(fmt.Sprintf("Activating pixel @ [%v, %v] -- #%v", x, y, PARTICLE_COUNT))
-	}
-}
-
-func DisableParticle(x, y int) {
-	if GetParticle(x, y).Active {
-		SetParticle(x, y, false)
-		PARTICLE_COUNT--
-		util.Log(fmt.Sprintf("Deactivating pixel @ [%v, %v] -- #%v", MOUSEX, MOUSEY, PARTICLE_COUNT))
-	}
-}
-
-func CheckForParticleSpawn(GRID Grid, MOUSEX int, MOUSEY int) {
+// func Setutil.Particle(particle *util.Particle, isActive bool) {
+func CheckForParticleSpawn(GRID util.Grid, MOUSEX int, MOUSEY int) {
 	// If mouse0 pressed
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButton(0)) && MOUSEX >= 0 && MOUSEY >= 0 {
 		// If particle pixel is INACTIVE
-		if !GetParticle(MOUSEX, MOUSEY).Active {
-			SpawnParticle(MOUSEX, MOUSEY)
+		if !particles.GetParticle(GRID, MOUSEX, MOUSEY).Active {
+			particles.SpawnParticle(GRID, &MAX_PARTICLES, &PARTICLE_COUNT, MOUSEX, MOUSEY)
 		} else {
-			DisableParticle(MOUSEX, MOUSEY)
+			particles.DisableParticle(&PARTICLE_COUNT, GRID, MOUSEX, MOUSEY)
 		}
 	}
 }
