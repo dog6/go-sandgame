@@ -18,6 +18,7 @@ import (
 	"git.smallzcomputing.com/sand-game/src/sandgameUI"
 	"git.smallzcomputing.com/sand-game/src/util"
 	"github.com/ebitenui/ebitenui"
+	"github.com/ebitenui/ebitenui/widget"
 )
 
 var (
@@ -32,16 +33,16 @@ var (
 )
 
 type Game struct {
-	ui *ebitenui.UI
+	ui  *ebitenui.UI
+	btn *widget.Button
 }
 
 var GRID util.Grid
 
 // CONST GAME VARIABLES
-const GRAVITY = 1
 
 func (g *Game) Update() error {
-	sandgameUI.UpdateUI(ebiten.ActualTPS(), ebiten.ActualFPS(), PARTICLE_COUNT)
+	sandgameUI.UpdateGameInfoLabel(ebiten.ActualTPS(), ebiten.ActualFPS(), PARTICLE_COUNT)
 	g.ui.Update()
 
 	MOUSEX, MOUSEY = ebiten.CursorPosition() // Capture mouse position
@@ -52,14 +53,13 @@ func (g *Game) Update() error {
 		SpawnRain(Conf.RainRate)
 	}
 
-	particles.SimulateParticles(GRID, GRAVITY)
+	particles.SimulateParticles(GRID, Conf.GRAVITY)
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(Conf.BackgroundColor.ToColor())
 	//ebitenutil.DebugPrint(screen, )
-
 	g.ui.Draw(screen)
 	wg := sync.WaitGroup{}
 	wg.Add(1)

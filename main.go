@@ -1,8 +1,8 @@
 package main
 
 import (
-	"git.smallzcomputing.com/sand-game/config"
-	"git.smallzcomputing.com/sand-game/game"
+	"git.smallzcomputing.com/sand-game/src/config"
+	"git.smallzcomputing.com/sand-game/src/game"
 	"git.smallzcomputing.com/sand-game/src/util"
 )
 

@@ -1,5 +1,5 @@
 ##  [ DEV CONFIG ]  ##
-version: "v0.1.1"
+version: "v0.1.2"
 # Gravity is borked atm
 gravity: 1
 verboseLogging: true
@@ -11,6 +11,7 @@ screenSize:
   Y: 720
 
 ## Game settings
+rainRate: 1
 backgroundColor:
   R: 30
   G: 30
@@ -24,10 +25,9 @@ particleColor:
 showSkippedParticles: true
 skippedParticleColor:
   R: 255
-  G: 140
-  B: 140
+  G: 160
+  B: 160
   A: 255
-rainRate: 1
 
 ## UI Settings
 fontFilePath: "res/fonts/font2.ttf"
