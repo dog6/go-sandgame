@@ -6,13 +6,10 @@ import (
 	"log"
 	"math/rand"
 	"sync"
-
 	"github.com/hajimehoshi/ebiten/v2"
 	_ "github.com/silbinarywolf/preferdiscretegpu"
-)
-import (
-	"image/color"
 
+	"image/color"
 	"git.smallzcomputing.com/sand-game/src/config"
 	"git.smallzcomputing.com/sand-game/src/particles"
 	"git.smallzcomputing.com/sand-game/src/sandgameUI"
@@ -39,8 +36,7 @@ type Game struct {
 
 var GRID util.Grid
 
-// CONST GAME VARIABLES
-
+// Updates game, called every frame
 func (g *Game) Update() error {
 	sandgameUI.UpdateGameInfoLabel(ebiten.ActualTPS(), ebiten.ActualFPS(), PARTICLE_COUNT)
 	g.ui.Update()
@@ -57,6 +53,7 @@ func (g *Game) Update() error {
 	return nil
 }
 
+// Renders game to screen, called every frame
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(Conf.BackgroundColor.ToColor())
 	//ebitenutil.DebugPrint(screen, )
@@ -67,10 +64,12 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	wg.Wait()
 }
 
+// Returns center of screen
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
 	return SCREENWIDTH / 2, SCREENHEIGHT / 2
 }
 
+// Called at start of game
 func Start(Config *config.Configuration) {
 
 	// Log config
@@ -111,6 +110,7 @@ func Start(Config *config.Configuration) {
 	}
 }
 
+// Prepare the grid before rendering
 func PrepareGrid(width, height, MOUSEX, MOUSEY int, col color.RGBA) [][]util.Particle {
 	util.Log(fmt.Sprintf("Particle color: R: %v, G: %v, B: %v, A: %v", col.R, col.G, col.B, col.A))
 	result := make([][]util.Particle, width)
@@ -118,7 +118,7 @@ func PrepareGrid(width, height, MOUSEX, MOUSEY int, col color.RGBA) [][]util.Par
 		result[i] = make([]util.Particle, height)
 
 		for j := 0; j < height; j++ {
-			result[i][j] = *result[i][j].PrepareParticle(MOUSEX, MOUSEY, col /*color.RGBA{R:255, G:255, B: 255, A: 255}*/)
+			result[i][j] = *result[i][j].PrepareParticle(MOUSEX, MOUSEY, col)
 		}
 
 	}
@@ -126,6 +126,7 @@ func PrepareGrid(width, height, MOUSEX, MOUSEY int, col color.RGBA) [][]util.Par
 	return result
 }
 
+// Spawn rain to help benchmark max particle count
 func SpawnRain(spawnRate int) {
 	if PARTICLE_COUNT+spawnRate <= MAX_PARTICLES {
 		for drops := 0; drops < spawnRate; drops++ {
